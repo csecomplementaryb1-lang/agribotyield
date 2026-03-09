@@ -373,8 +373,11 @@ def predict():
         # Prepare input data for ML model
         if model is None or scaler is None:
             # If model not loaded, return error
-            return render_template('error.html', 
-                                   error="ML model not available. Please ensure models are trained and deployed.")
+            try:
+                return render_template('error.html', 
+                                       error="ML model not available. Please ensure models are trained and deployed.")
+            except:
+                return jsonify({'error': 'ML model not available. Please train the model first.', 'status': 500}), 500
         
         try:
             input_data = {
@@ -448,10 +451,16 @@ def predict():
                              yield_unit=yield_unit)
     
     except ValueError:
-        return render_template('error.html', 
-                               error="Please check your input values. All fields should contain valid numbers.")
+        try:
+            return render_template('error.html', 
+                                   error="Please check your input values. All fields should contain valid numbers.")
+        except:
+            return jsonify({'error': 'Invalid input values. All fields should contain valid numbers.', 'status': 400}), 400
     except Exception as e:
-        return render_template('error.html', error=f"Error: {str(e)}")
+        try:
+            return render_template('error.html', error=f"Error: {str(e)}")
+        except:
+            return jsonify({'error': f'Error: {str(e)}', 'status': 500}), 500
 
 @app.route('/history')
 def prediction_history():
@@ -527,11 +536,21 @@ def health_check():
 
 @app.errorhandler(404)
 def not_found(error):
-    return render_template('error.html', error="Page not found"), 404
+    """Handle 404 errors"""
+    try:
+        return render_template('error.html', error="Page not found"), 404
+    except:
+        # Fallback if template not available in Vercel
+        return jsonify({'error': 'Page not found', 'status': 404}), 404
 
 @app.errorhandler(500)
 def internal_error(error):
-    return render_template('error.html', error="Internal server error"), 500
+    """Handle 500 errors"""
+    try:
+        return render_template('error.html', error="Internal server error"), 500
+    except:
+        # Fallback if template not available in Vercel
+        return jsonify({'error': 'Internal server error', 'status': 500}), 500
 
 @app.after_request
 def after_request(response):
