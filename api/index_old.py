@@ -4,50 +4,115 @@ This is the main entry point for Vercel deployment.
 The Flask app is exported as 'app' for Vercel to serve.
 """
 
-from flask import Flask, render_template, request, jsonify
-import pickle
-import pandas as pd
-import numpy as np
-import requests
-import json
-from datetime import datetime
-import os
-from dotenv import load_dotenv
-import google.generativeai as genai
 import sys
+import os
 from pathlib import Path
 
 # Add parent directory to path so we can import from modules
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-# Load environment variables
-load_dotenv()
+# Import Flask first
+from flask import Flask, render_template, request, jsonify
+from datetime import datetime
 
+# Create Flask app FIRST before any other imports
 app = Flask(__name__, 
             template_folder='../templates',
             static_folder='../static')
 
-# Configure Gemini API
-GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
-if GEMINI_API_KEY:
-    genai.configure(api_key=GEMINI_API_KEY)
-    print("✅ Gemini API configured successfully!")
-else:
-    print("⚠️  Gemini API key not found in environment variables")
+# Now import other dependencies with error handling
+print("[INIT] Loading dependencies...")
 
-# Load trained model and scaler
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+    print("[INIT] ✅ dotenv loaded")
+except ImportError as e:
+    print(f"[INIT] ⚠️  dotenv error: {e}")
+
+try:
+    import google.generativeai as genai
+    GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
+    if GEMINI_API_KEY:
+        genai.configure(api_key=GEMINI_API_KEY)
+        print("[INIT] ✅ Gemini API configured")
+    else:
+        print("[INIT] ⚠️  GEMINI_API_KEY not set")
+        GEMINI_API_KEY = None
+except Exception as e:
+    print(f"[INIT] ⚠️  Gemini API error: {e}")
+    GEMINI_API_KEY = None
+
+# Load optional dependencies
+pandas = None
+numpy = None
 model = None
 scaler = None
+
 try:
-    models_path = Path(__file__).parent.parent / 'models'
-    with open(models_path / 'random_forest_model.pkl', 'rb') as f:
-        model = pickle.load(f)
-    with open(models_path / 'scaler.pkl', 'rb') as f:
-        scaler = pickle.load(f)
-    print("✅ ML models loaded successfully!")
+    import pickle
+    import pandas as pd
+    import numpy as np
+    from sklearn.preprocessing import StandardScaler
+    pandas = pd
+    numpy = np
+    print("[INIT] ✅ ML libraries loaded")
+except ImportError as e:
+    print(f"[INIT] ⚠️  ML libraries not available: {e}")
+
+try:
+    import requests
+    print("[INIT] ✅ requests loaded")
+except ImportError as e:
+    print(f"[INIT] ⚠️  requests error: {e}")
+
+# Try to load models with proper error handling
+try:
+    if pandas and numpy:
+        models_path = Path(__file__).parent.parent / 'models'
+        if models_path.exists():
+            model_file = models_path / 'random_forest_model.pkl'
+            scaler_file = models_path / 'scaler.pkl'
+            
+            if model_file.exists():
+                with open(model_file, 'rb') as f:
+                    model = pickle.load(f)
+                print(f"[INIT] ✅ Model loaded from {model_file}")
+            else:
+                print(f"[INIT] ⚠️  Model file not found: {model_file}")
+            
+            if scaler_file.exists():
+                with open(scaler_file, 'rb') as f:
+                    scaler = pickle.load(f)
+                print(f"[INIT] ✅ Scaler loaded from {scaler_file}")
+            else:
+                print(f"[INIT] ⚠️  Scaler file not found: {scaler_file}")
+        else:
+            print(f"[INIT] ⚠️  Models directory not found: {models_path}")
 except Exception as e:
-    print(f"⚠️  Model loading error: {e}")
-    print("Models will be unavailable until trained")
+    print(f"[INIT] ⚠️  Error loading models: {e}")
+    model = None
+    scaler = None
+
+print("[INIT] 🚀 Initialization complete")
+
+# ============================================================================
+# HEALTH CHECK - Test if basic app is running
+# ============================================================================
+
+@app.route('/health', methods=['GET'])
+def health_check():
+    """Minimal health check to verify app is running"""
+    try:
+        return jsonify({
+            'status': 'healthy',
+            'service': 'Agricultural Yield Prediction',
+            'deployment': 'Vercel',
+            'timestamp': datetime.now().isoformat()
+        }), 200
+    except Exception as e:
+        print(f"[ERROR] Health check failed: {e}")
+        return jsonify({'status': 'error', 'error': str(e)}), 500
 
 # ============================================================================
 # DATABASE FUNCTIONS
@@ -331,7 +396,21 @@ def index():
         {'id': 5, 'crop_name': 'Sun Flower'},
     ]
     
-    return render_template('index.html', districts=districts, crops=crops)
+    try:
+        return render_template('index.html', districts=districts, crops=crops)
+    except Exception as e:
+        print(f"[ERROR] Template rendering failed: {e}")
+        # Fallback JSON response
+        return jsonify({
+            'message': 'Agricultural Yield Prediction System',
+            'status': 'running',
+            'api_endpoints': {
+                'health': '/health',
+                'predict': '/predict (POST)',
+                'chat': '/chat (POST)',
+                'history': '/history'
+            }
+        }), 200
 
 @app.route('/predict', methods=['POST'])
 def predict():
@@ -518,21 +597,7 @@ def chat():
         response.headers.add('Access-Control-Allow-Origin', '*')
         return response
 
-@app.route('/health', methods=['GET'])
-def health_check():
-    """Health check endpoint"""
-    db_status = "configured" if get_db_connection() else "not-configured"
-    model_status = "loaded" if model is not None and scaler is not None else "not-loaded"
-    
-    return jsonify({
-        'status': 'healthy',
-        'service': 'Agricultural Yield Prediction',
-        'deployment': 'Vercel Serverless',
-        'ai_chat': 'enabled' if GEMINI_API_KEY else 'disabled',
-        'database': db_status,
-        'ml_model': model_status,
-        'timestamp': datetime.now().isoformat()
-    }), 200
+# (Duplicate /health route removed - using the first definition)
 
 @app.errorhandler(404)
 def not_found(error):
