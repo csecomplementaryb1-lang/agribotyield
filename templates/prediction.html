@@ -1,0 +1,1310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prediction Results - Agriculture Yield Prediction</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* Prediction Page Specific Styles */
+        .prediction-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .results-header {
+            background: linear-gradient(135deg, #1a4d2e, #2E8B57, #3CB371);
+            box-shadow: 0 0 30px 10px rgba(0, 255, 136, 0.3), 0 0 60px 20px rgba(46, 139, 87, 0.2) inset;
+            color: white;
+            padding: 40px;
+            text-align: center;
+            border-radius: 20px 20px 0 0;
+            margin-bottom: 0;
+            border-top: 2px solid #00ff88;
+        }
+
+        .results-header h1 {
+            font-size: 2.8em;
+            margin-bottom: 10px;
+            text-shadow: 0 0 10px #00ff88, 0 0 20px #3CB371, 2px 2px 4px rgba(0,0,0,0.3);
+            letter-spacing: 1px;
+        }
+
+        .results-header p {
+            font-size: 1.3em;
+            opacity: 0.95;
+            text-shadow: 0 0 8px rgba(0, 255, 136, 0.5);
+        }
+
+        .results-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            padding: 40px;
+            background: white;
+        }
+
+        @media (max-width: 768px) {
+            .results-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Input Summary Card */
+        .input-summary-card {
+            background: linear-gradient(135deg, #F8FFF8, #E8F5E8);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(46, 139, 87, 0.1);
+            border: 2px solid #E8F5E8;
+        }
+
+        .input-summary-card h2 {
+            color: #2E8B57;
+            margin-bottom: 25px;
+            font-size: 1.8em;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 3px solid #3CB371;
+            padding-bottom: 15px;
+        }
+
+        .input-grid {
+            display: grid;
+            gap: 20px;
+        }
+
+        .input-category {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            border-left: 4px solid #3CB371;
+        }
+
+        .input-category h3 {
+            color: #2E8B57;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .input-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #E8F5E8;
+        }
+
+        .input-item:last-child {
+            border-bottom: none;
+        }
+
+        .input-label {
+            color: #555;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .input-value {
+            color: #2E8B57;
+            font-weight: 600;
+            font-size: 1.1em;
+            background: #F8FFF8;
+            padding: 8px 15px;
+            border-radius: 10px;
+            border: 1px solid #3CB371;
+        }
+
+        /* Results Card */
+        .results-card {
+            background: linear-gradient(135deg, #fff9e6, #ffffe0, #fffacd);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 0 30px 5px rgba(255, 215, 0, 0.4), 0 10px 30px rgba(255, 152, 0, 0.15);
+            border: 2px solid #FFD700;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .results-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 150px;
+            height: 150px;
+            background: radial-gradient(circle, rgba(255, 215, 0, 0.4), transparent);
+            border-radius: 0 0 0 150px;
+            filter: blur(30px);
+            z-index: 1;
+        }
+
+        .results-card h2 {
+            color: #FF6F00;
+            margin-bottom: 25px;
+            font-size: 1.8em;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 3px solid #FFD700;
+            padding-bottom: 15px;
+            position: relative;
+            z-index: 2;
+            text-shadow: 0 0 8px rgba(255, 215, 0, 0.5);
+        }
+
+        .yield-results {
+            display: grid;
+            gap: 25px;
+        }
+
+        .yield-item {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(255, 152, 0, 0.1);
+            border: 2px solid #FFD54F;
+            text-align: center;
+            transition: transform 0.3s ease;
+            position: relative;
+            z-index: 2;
+        }
+
+        .yield-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(255, 152, 0, 0.25);
+        }
+
+        .yield-item.per-hectare {
+            border-color: #4CAF50;
+            background: linear-gradient(135deg, #e8f5e9, #c8e6c9, #a5d6a7);
+            box-shadow: 0 0 20px 3px rgba(76, 175, 80, 0.3), 0 5px 15px rgba(0,0,0,0.08);
+            border: 2px solid #4CAF50;
+        }
+
+        .yield-item.per-hectare:hover {
+            box-shadow: 0 0 30px 5px rgba(76, 175, 80, 0.5), 0 8px 25px rgba(0,0,0,0.12);
+        }
+
+        .yield-item.total-yield {
+            border-color: #FF9800;
+            background: linear-gradient(135deg, #ffe0b2, #ffcc80, #ffb74d);
+            box-shadow: 0 0 20px 3px rgba(255, 152, 0, 0.35), 0 5px 15px rgba(0,0,0,0.08);
+            border: 2px solid #FF9800;
+        }
+
+        .yield-item.total-yield:hover {
+            box-shadow: 0 0 30px 5px rgba(255, 152, 0, 0.5), 0 8px 25px rgba(0,0,0,0.12);
+        }
+
+        .yield-label {
+            color: #555;
+            font-size: 1.1em;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-weight: 600;
+        }
+
+        .yield-value {
+            color: #2E8B57;
+            font-size: 2.5em;
+            font-weight: 700;
+            margin: 15px 0;
+            text-shadow: 0 0 10px rgba(76, 175, 80, 0.6), 1px 1px 3px rgba(0,0,0,0.2);
+            letter-spacing: 1px;
+        }
+
+        .yield-unit {
+            color: #2E8B57;
+            font-size: 1.1em;
+            font-weight: 600;
+            background: linear-gradient(135deg, rgba(46, 139, 87, 0.1), rgba(76, 175, 80, 0.15));
+            padding: 8px 18px;
+            border-radius: 20px;
+            display: inline-block;
+            border: 1px solid rgba(76, 175, 80, 0.4);
+            box-shadow: 0 0 8px rgba(76, 175, 80, 0.2);
+        }
+
+        .yield-item.total-yield .yield-value {
+            color: #FF6F00;
+            text-shadow: 0 0 10px rgba(255, 152, 0, 0.6), 1px 1px 3px rgba(0,0,0,0.2);
+        }
+
+        .yield-item.total-yield .yield-label {
+            color: #E65100;
+        }
+
+        .yield-item.total-yield .yield-unit {
+            color: #FF6F00;
+            background: linear-gradient(135deg, rgba(255, 152, 0, 0.1), rgba(255, 193, 7, 0.15));
+            border: 1px solid rgba(255, 152, 0, 0.4);
+            box-shadow: 0 0 8px rgba(255, 152, 0, 0.3);
+        }
+
+        /* Agricultural Insights Section */
+        .agri-insights {
+            background: #f5f9f5;
+            border-radius: 12px;
+            padding: 24px;
+            margin-top: 30px;
+        }
+
+        .agri-insights h2 {
+            color: #2E7D32;
+            font-family: 'Poppins', sans-serif;
+            margin-bottom: 18px;
+            font-size: 1.6em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+        }
+
+        .agri-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+        }
+
+        .agri-card {
+            display: flex;
+            gap: 14px;
+            align-items: center;
+            background: #ffffff;
+            padding: 16px;
+            border-radius: 12px;
+            box-shadow: 0 6px 18px rgba(46, 125, 50, 0.07);
+            transition: transform 0.25s cubic-bezier(.2,.9,.2,1), box-shadow 0.25s;
+            border: 1px solid rgba(46, 125, 50, 0.06);
+        }
+
+        .agri-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 18px 40px rgba(46, 125, 50, 0.12);
+        }
+
+        .agri-icon {
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #2E7D32 0%, #4CAF50 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 20px;
+            flex-shrink: 0;
+            box-shadow: 0 6px 16px rgba(46, 125, 50, 0.16);
+        }
+
+        .agri-content {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .agri-title {
+            color: #2E7D32;
+            font-weight: 600;
+            font-family: 'Poppins', sans-serif;
+            font-size: 0.98rem;
+        }
+
+        .agri-desc {
+            color: #556b55;
+            font-size: 0.92rem;
+            line-height: 1.2;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        /* Action Buttons */
+        .action-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 40px;
+            padding: 0 40px 40px;
+        }
+
+        .action-btn {
+            padding: 16px 26px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.05em;
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 0.25s cubic-bezier(.2,.9,.2,1), box-shadow 0.25s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            text-decoration: none;
+            position: relative;
+            overflow: hidden;
+            perspective: 800px;
+        }
+
+        /* 3D shining button bases */
+        .btn-new-prediction {
+            background: linear-gradient(180deg, #39a26a 0%, #2E7D32 100%);
+            color: white;
+            box-shadow: 0 8px 18px rgba(46,125,50,0.18), inset 0 2px 0 rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+
+        .btn-history {
+            background: linear-gradient(180deg, #4fa3ff 0%, #1976D2 100%);
+            color: white;
+            box-shadow: 0 8px 18px rgba(25,118,210,0.16), inset 0 2px 0 rgba(255,255,255,0.06);
+        }
+
+        .btn-home {
+            background: linear-gradient(180deg, #ffb366 0%, #F57C00 100%);
+            color: white;
+            box-shadow: 0 8px 18px rgba(245,124,0,0.16), inset 0 2px 0 rgba(255,255,255,0.06);
+        }
+
+        /* shining highlight */
+        .action-btn::after {
+            content: '';
+            position: absolute;
+            left: -60%;
+            top: -40%;
+            width: 40%;
+            height: 180%;
+            background: rgba(255,255,255,0.12);
+            transform: rotate(25deg);
+            filter: blur(6px);
+            transition: left 0.6s ease;
+            pointer-events: none;
+        }
+
+        .action-btn:hover::after {
+            left: 120%;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 22px 50px rgba(46,125,50,0.16);
+        }
+
+        /* Success Animation */
+        @keyframes successPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .success-animation {
+            animation: successPulse 2s ease-in-out;
+        }
+
+        /* Sample Data Section */
+        .sample-data {
+            background: linear-gradient(135deg, #F8FFF8, #E8F5E8);
+            border-radius: 15px;
+            padding: 30px;
+            margin: 30px 0;
+            border-left: 5px solid #2E8B57;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        }
+
+        .sample-data h3 {
+            color: #2E8B57;
+            margin-bottom: 20px;
+            font-size: 1.4em;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .sample-data p {
+            color: #666;
+            margin-bottom: 20px;
+            font-size: 1.1em;
+        }
+
+        .sample-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .sample-btn {
+            padding: 15px 20px;
+            background: linear-gradient(135deg, #3CB371, #2E8B57);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            justify-content: center;
+            text-align: left;
+        }
+
+        .sample-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(46, 139, 87, 0.3);
+            background: linear-gradient(135deg, #2E8B57, #3CB371);
+        }
+
+        .sample-info {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 4px solid #3CB371;
+            display: none;
+            margin-top: 15px;
+            font-size: 14px;
+            line-height: 1.6;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .sample-info.active {
+            display: block;
+            animation: fadeInUp 0.5s ease;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .prediction-container {
+                padding: 10px;
+            }
+
+            .results-header {
+                padding: 30px 20px;
+            }
+
+            .results-header h1 {
+                font-size: 2.2em;
+            }
+
+            .results-content {
+                padding: 20px;
+                gap: 20px;
+            }
+
+            .yield-value {
+                font-size: 2em;
+            }
+
+            .yield-item.total-yield .yield-value {
+                font-size: 2.2em;
+            }
+
+            .action-buttons {
+                padding: 0 20px 20px;
+                grid-template-columns: 1fr;
+            }
+
+            .sample-buttons {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner">
+            <div class="spinner"></div>
+            <div class="loading-text">Analyzing your crop data<span class="loading-dots"></span></div>
+        </div>
+    </div>
+
+    <div class="prediction-container">
+        <!-- Header Section -->
+        <div class="results-header">
+            <h1>🎯 Prediction Results</h1>
+            <p>{{ crop }} Cultivation in {{ district }} District</p>
+        </div>
+
+        <!-- Main Content -->
+        <div class="results-content">
+            <!-- Input Summary -->
+            <div class="input-summary-card">
+                <h2><i class="fas fa-clipboard-list"></i> Input Parameters</h2>
+                <div class="input-grid">
+                    <!-- Location & Crop -->
+                    <div class="input-category">
+                        <h3><i class="fas fa-map-marker-alt"></i> Location & Crop</h3>
+                        <div class="input-item">
+                            <span class="input-label"><i class="fas fa-tractor"></i> District</span>
+                            <span class="input-value">{{ district }}</span>
+                        </div>
+                        <div class="input-item">
+                            <span class="input-label"><i class="fas fa-seedling"></i> Crop</span>
+                            <span class="input-value">{{ crop }}</span>
+                        </div>
+                        <div class="input-item">
+                            <span class="input-label"><i class="fas fa-ruler-combined"></i> Area</span>
+                            <span class="input-value">{{ area }} {{ area_unit }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Weather Conditions -->
+                    <div class="input-category">
+                        <h3><i class="fas fa-cloud-sun"></i> Weather Conditions</h3>
+                        <div class="input-item">
+                            <span class="input-label"><i class="fas fa-cloud-rain"></i> Rainfall</span>
+                            <span class="input-value">{{ rainfall }} mm</span>
+                        </div>
+                        <div class="input-item">
+                            <span class="input-label"><i class="fas fa-thermometer-half"></i> Temperature</span>
+                            <span class="input-value">{{ temperature }} °C</span>
+                        </div>
+                    </div>
+
+                    <!-- Soil Health -->
+                    <div class="input-category">
+                        <h3><i class="fas fa-flask"></i> Soil Health</h3>
+                        <div class="input-item">
+                            <span class="input-label"><i class="fas fa-vial"></i> Soil pH</span>
+                            <span class="input-value">{{ soil_ph }}</span>
+                        </div>
+                        <div class="input-item">
+                            <span class="input-label"><i class="fas fa-atom"></i> Nitrogen</span>
+                            <span class="input-value">{{ nitrogen }} kg/ha</span>
+                        </div>
+                        <div class="input-item">
+                            <span class="input-label"><i class="fas fa-fire"></i> Phosphorus</span>
+                            <span class="input-value">{{ phosphorus }} kg/ha</span>
+                        </div>
+                        <div class="input-item">
+                            <span class="input-label"><i class="fas fa-bolt"></i> Potassium</span>
+                            <span class="input-value">{{ potassium }} kg/ha</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results Card -->
+            <div class="results-card">
+                <h2><i class="fas fa-chart-line"></i> Yield Prediction</h2>
+                <div class="yield-results">
+                    <!-- Yield per Unit (Hectare/Acre) -->
+                    <div class="yield-item per-hectare success-animation">
+                        <div class="yield-label">
+                            <i class="fas fa-chart-bar"></i> {% if area_unit == 'acres' %}Yield per Acre{% else %}Yield per Hectare{% endif %}
+                        </div>
+                        <div class="yield-value">{{ yield_per_ha }}</div>
+                        <div class="yield-unit">{{ yield_unit }}</div>
+                        <div style="margin-top: 15px; color: #666; font-size: 0.9em;">
+                            <i class="fas fa-info-circle"></i> Productivity per unit area
+                        </div>
+                    </div>
+
+                    <!-- Total Yield -->
+                    <div class="yield-item total-yield success-animation" style="animation-delay: 0.5s;">
+                        <div class="yield-label">
+                            <i class="fas fa-weight-hanging"></i> Total Expected Yield
+                        </div>
+                        <div class="yield-value">{{ total_yield }}</div>
+                        <div class="yield-unit">{{ yield_unit.replace('/ha', '') }} Total</div>
+                        <div style="margin-top: 15px; color: #666; font-size: 0.9em;">
+                            <i class="fas fa-calculator"></i> Based on {{ area }} {{ area_unit }} cultivation area
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Yield Indicator -->
+        <div class="yield-indicator-section">
+            <div class="yield-indicator-title">
+                <i class="fas fa-chart-pie"></i> Yield Performance Level
+            </div>
+            <div class="yield-bar-container">
+                <div class="yield-bar-fill" id="yieldBar" style="width: 0%;">
+                    <span id="yieldPercentage">0%</span>
+                </div>
+            </div>
+            <div class="yield-indicator-labels">
+                <div class="yield-label-item low">📉 Low (0-20%)</div>
+                <div class="yield-label-item medium">📊 Medium (20-40%)</div>
+                <div class="yield-label-item good">📈 Good (40-60%)</div>
+                <div class="yield-label-item high">⬆️ High (60-80%)</div>
+                <div class="yield-label-item excellent">🌟 Excellent (80-100%)</div>
+            </div>
+            <div class="yield-status" id="yieldStatus">
+                Analyzing your yield potential...
+            </div>
+        </div>
+
+        <!-- AI-Powered Suggestions Section -->
+        <div class="suggestions-section">
+            <div class="suggestions-title">
+                <i class="fas fa-lightbulb"></i> AI-Powered Crop Improvement Suggestions
+            </div>
+            <div id="suggestionsContainer" class="suggestions-loading">
+                <div class="spinner" style="width: 40px; height: 40px; margin: 0 auto;"></div>
+                <p>Generating personalized suggestions for {{ crop }}...</p>
+            </div>
+        </div>
+
+        <!-- Agricultural Insights Section -->
+        <div class="agri-insights">
+            <h2><i class="fas fa-leaf"></i> Agricultural Insights</h2>
+            <div class="agri-cards">
+                <div class="agri-card">
+                    <div class="agri-icon"><i class="fas fa-cloud-showers-heavy"></i></div>
+                    <div class="agri-content">
+                        <div class="agri-title">🌧 Rainfall</div>
+                        <div class="agri-desc">Optimal rainfall for {{ crop }} is 900 mm</div>
+                    </div>
+                </div>
+
+                <div class="agri-card">
+                    <div class="agri-icon"><i class="fas fa-thermometer-half"></i></div>
+                    <div class="agri-content">
+                        <div class="agri-title">🌡 Temperature</div>
+                        <div class="agri-desc">Ideal temperature range maintained</div>
+                    </div>
+                </div>
+
+                <div class="agri-card">
+                    <div class="agri-icon"><i class="fas fa-vial"></i></div>
+                    <div class="agri-content">
+                        <div class="agri-title">🌱 Soil pH</div>
+                        <div class="agri-desc">Soil pH level is crop-friendly</div>
+                    </div>
+                </div>
+
+                <div class="agri-card">
+                    <div class="agri-icon"><i class="fas fa-flask"></i></div>
+                    <div class="agri-content">
+                        <div class="agri-title">🧪 Nitrogen (N)</div>
+                        <div class="agri-desc">Nitrogen level supports healthy growth</div>
+                    </div>
+                </div>
+
+                <div class="agri-card">
+                    <div class="agri-icon"><i class="fas fa-flask"></i></div>
+                    <div class="agri-content">
+                        <div class="agri-title">🧪 Phosphorus (P)</div>
+                        <div class="agri-desc">Phosphorus level supports root development</div>
+                    </div>
+                </div>
+
+                <div class="agri-card">
+                    <div class="agri-icon"><i class="fas fa-seedling"></i></div>
+                    <div class="agri-content">
+                        <div class="agri-title">🧪 Potassium (K)</div>
+                        <div class="agri-desc">Potassium level ensures strong crop yield</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sample Data Section -->
+        <div class="sample-data">
+            <h3><i class="fas fa-lightbulb"></i> Try More Predictions</h3>
+            <p>Test different crop configurations to compare results:</p>
+            
+            <div class="sample-buttons">
+                <button type="button" class="sample-btn" onclick="fillSample(1)">
+                    <i class="fas fa-tint"></i> Rice - Thanjavur
+                </button>
+                <button type="button" class="sample-btn" onclick="fillSample(2)">
+                    <i class="fas fa-candy-cane"></i> Sugar Cane - Coimbatore
+                </button>
+                <button type="button" class="sample-btn" onclick="fillSample(3)">
+                    <i class="fas fa-apple-alt"></i> Banana - Tiruchirappalli
+                </button>
+                <button type="button" class="sample-btn" onclick="fillSample(4)">
+                    <i class="fas fa-seedling"></i> Ground Nut - Vellore
+                </button>
+                <button type="button" class="sample-btn" onclick="fillSample(5)">
+                    <i class="fas fa-shirt"></i> Cotton - Salem
+                </button>
+                <button type="button" class="sample-btn" onclick="fillSample(6)">
+                    <i class="fas fa-sun"></i> Sun Flower - Madurai
+                </button>
+            </div>
+
+            <div id="sampleInfo1" class="sample-info">
+                <strong><i class="fas fa-tint"></i> Rice in Thanjavur (High Yield Conditions)</strong><br>
+                Area: 2.0 hectares | Rainfall: 950mm | Temp: 28.5°C | Soil pH: 6.8<br>
+                N: 280 kg/ha | P: 60 kg/ha | K: 220 kg/ha<br>
+                Expected: ~3,000 kg/ha
+            </div>
+            
+            <div id="sampleInfo2" class="sample-info">
+                <strong><i class="fas fa-candy-cane"></i> Sugar Cane in Coimbatore</strong><br>
+                Area: 5.0 acres | Rainfall: 700mm | Temp: 30.0°C | Soil pH: 7.2<br>
+                N: 350 kg/ha | P: 80 kg/ha | K: 280 kg/ha<br>
+                Expected: ~80 tonnes/acre
+            </div>
+            
+            <div id="sampleInfo3" class="sample-info">
+                <strong><i class="fas fa-apple-alt"></i> Banana in Tiruchirappalli</strong><br>
+                Area: 3.0 hectares | Rainfall: 900mm | Temp: 29.0°C | Soil pH: 7.5<br>
+                N: 400 kg/ha | P: 100 kg/ha | K: 350 kg/ha<br>
+                Expected: ~45 tonnes/ha
+            </div>
+        </div>
+
+        <!-- Insights Section -->
+        
+
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+            <a href="/" class="action-btn btn-new-prediction">
+                <i class="fas fa-calculator"></i> New Prediction
+            </a>
+            <a href="/history" class="action-btn btn-history">
+                <i class="fas fa-history"></i> View History
+            </a>
+            <a href="/" class="action-btn btn-home">
+                <i class="fas fa-home"></i> Back to Home
+            </a>
+        </div>
+    </div>
+
+    <!-- AI Chat Bot -->
+        <div class="chatbot-container">
+        <button class="chatbot-button" id="chatbotToggle">
+            <img src="{{ url_for('static', filename='agribotnew.png') }}" alt="Agri Bot" class="chatbot-avatar">
+        </button>
+        
+        <div class="chatbot-window" id="chatbotWindow">
+            <div class="chatbot-header">
+                <h3>🌾 Agri Assistant</h3>
+                <button class="chatbot-close" id="chatbotClose">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="chatbot-messages" id="chatbotMessages">
+                <div class="message bot">
+                    Great prediction results! I can help you understand these results better or suggest improvements for even higher yields!
+                </div>
+            </div>
+            
+            <div class="suggested-questions">
+                <button class="suggested-question" onclick="askQuestion('How can I improve my ' + '{{ crop }}' + ' yield in ' + '{{ district }}' + '?')">
+                    💡 Improve {{ crop }} yield?
+                </button>
+                <button class="suggested-question" onclick="askQuestion('What are the best practices for ' + '{{ crop }}' + ' cultivation?')">
+                    🌱 Best practices for {{ crop }}?
+                </button>
+                <button class="suggested-question" onclick="askQuestion('How does soil pH affect ' + '{{ crop }}' + ' growth?')">
+                    🧪 Soil pH impact on {{ crop }}?
+                </button>
+            </div>
+            
+            <div class="chatbot-input">
+                <form class="chatbot-input-form" id="chatbotForm">
+                    <input type="text" id="chatbotInput" placeholder="Ask about your prediction results..." required>
+                    <button type="submit" class="chatbot-send">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </form>
+            </div>
+            
+            <div class="typing-indicator" id="typingIndicator">
+                <i class="fas fa-ellipsis-h"></i> Agri Assistant is typing...
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Add current date to the page
+        const currentDate = new Date().toLocaleDateString('en-IN', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+
+        // Create and insert date element
+        const dateElement = document.createElement('div');
+        dateElement.style.cssText = `
+            text-align: center;
+            color: white;
+            font-size: 1.1em;
+            margin-top: 10px;
+            opacity: 0.9;
+        `;
+        dateElement.innerHTML = `<i class="fas fa-calendar"></i> Prediction generated on ${currentDate}`;
+        document.querySelector('.results-header').appendChild(dateElement);
+
+        // Sample data configurations for prediction page
+        const samples = {
+            1: { // Rice - Thanjavur
+                district: "Thanjavur",
+                crop: "Rice",
+                area: "2.0",
+                area_unit: "hectares",
+                rainfall: "950",
+                temperature: "28.5",
+                soil_ph: "6.8",
+                nitrogen: "280",
+                phosphorus: "60",
+                potassium: "220"
+            },
+            2: { // Sugar Cane - Coimbatore
+                district: "Coimbatore", 
+                crop: "Sugar Cane",
+                area: "5.0",
+                area_unit: "acres",
+                rainfall: "700",
+                temperature: "30.0",
+                soil_ph: "7.2",
+                nitrogen: "350",
+                phosphorus: "80",
+                potassium: "280"
+            },
+            3: { // Banana - Tiruchirappalli
+                district: "Tiruchirappalli",
+                crop: "Banana",
+                area: "3.0",
+                area_unit: "hectares",
+                rainfall: "900",
+                temperature: "29.0",
+                soil_ph: "7.5",
+                nitrogen: "400",
+                phosphorus: "100",
+                potassium: "350"
+            },
+            4: { // Ground Nut - Vellore
+                district: "Vellore",
+                crop: "Ground Nut",
+                area: "4.0",
+                area_unit: "acres", 
+                rainfall: "800",
+                temperature: "29.5",
+                soil_ph: "6.5",
+                nitrogen: "180",
+                phosphorus: "45",
+                potassium: "160"
+            },
+            5: { // Cotton - Salem
+                district: "Salem",
+                crop: "Cotton",
+                area: "8.0",
+                area_unit: "acres",
+                rainfall: "750",
+                temperature: "30.5", 
+                soil_ph: "7.0",
+                nitrogen: "220",
+                phosphorus: "50",
+                potassium: "190"
+            },
+            6: { // Sun Flower - Madurai
+                district: "Madurai",
+                crop: "Sun Flower",
+                area: "6.0",
+                area_unit: "hectares",
+                rainfall: "650",
+                temperature: "31.0",
+                soil_ph: "6.8",
+                nitrogen: "150",
+                phosphorus: "40",
+                potassium: "140"
+            }
+        };
+
+        function fillSample(sampleId) {
+            console.log("Filling sample:", sampleId, samples[sampleId]);
+            
+            const sample = samples[sampleId];
+            if (!sample) {
+                console.error("Sample not found:", sampleId);
+                return;
+            }
+            
+            // Hide all sample info
+            document.querySelectorAll('.sample-info').forEach(info => {
+                info.classList.remove('active');
+            });
+            
+            // Show selected sample info
+            const sampleInfo = document.getElementById(`sampleInfo${sampleId}`);
+            if (sampleInfo) {
+                sampleInfo.classList.add('active');
+            }
+            
+            // Create a form and submit it to make a new prediction
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/predict';
+            form.style.display = 'none';
+            
+            // Add all form fields
+            const fields = [
+                { name: 'district', value: getDistrictId(sample.district) },
+                { name: 'crop', value: getCropId(sample.crop) },
+                { name: 'area', value: sample.area },
+                { name: 'area_unit', value: sample.area_unit },
+                { name: 'rainfall', value: sample.rainfall },
+                { name: 'temperature', value: sample.temperature },
+                { name: 'soil_ph', value: sample.soil_ph },
+                { name: 'nitrogen', value: sample.nitrogen },
+                { name: 'phosphorus', value: sample.phosphorus },
+                { name: 'potassium', value: sample.potassium }
+            ];
+            
+            fields.forEach(field => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = field.name;
+                input.value = field.value;
+                form.appendChild(input);
+            });
+            
+            document.body.appendChild(form);
+            form.submit();
+        }
+
+        function getDistrictId(districtName) {
+            // This would normally come from the server, but for now we'll use a simple mapping
+            const districtMap = {
+                'Thanjavur': '1', 'Coimbatore': '3', 'Tiruchirappalli': '24',
+                'Vellore': '30', 'Salem': '19', 'Madurai': '12'
+            };
+            return districtMap[districtName] || '1';
+        }
+
+        function getCropId(cropName) {
+            // Simple mapping for crops
+            const cropMap = {
+                'Rice': '1', 'Sugar Cane': '2', 'Banana': '3',
+                'Ground Nut': '4', 'Cotton': '5', 'Sun Flower': '6'
+            };
+            return cropMap[cropName] || '1';
+        }
+
+        // AI Chat Bot Functionality
+        const chatbotToggle = document.getElementById('chatbotToggle');
+        const chatbotWindow = document.getElementById('chatbotWindow');
+        const chatbotClose = document.getElementById('chatbotClose');
+        const chatbotForm = document.getElementById('chatbotForm');
+        const chatbotInput = document.getElementById('chatbotInput');
+        const chatbotMessages = document.getElementById('chatbotMessages');
+        const typingIndicator = document.getElementById('typingIndicator');
+
+        chatbotToggle.addEventListener('click', () => {
+            chatbotWindow.classList.toggle('active');
+            if (chatbotWindow.classList.contains('active')) {
+                chatbotInput.focus();
+            }
+        });
+
+        chatbotClose.addEventListener('click', () => {
+            chatbotWindow.classList.remove('active');
+        });
+
+        window.askQuestion = function(question) {
+            chatbotInput.value = question;
+            handleChatSubmit();
+        }
+
+        chatbotForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            handleChatSubmit();
+        });
+
+        function handleChatSubmit() {
+            const message = chatbotInput.value.trim();
+            if (!message) return;
+            
+            addMessage(message, 'user');
+            chatbotInput.value = '';
+            
+            typingIndicator.style.display = 'flex';
+            scrollToBottom();
+            
+            fetch('/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ message: message })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                typingIndicator.style.display = 'none';
+                if (data.response) {
+                    addMessage(data.response, 'bot');
+                } else {
+                    addMessage("I apologize, but I didn't receive a proper response.", 'bot');
+                }
+            })
+            .catch(error => {
+                console.error('Chat error:', error);
+                typingIndicator.style.display = 'none';
+                addMessage('Sorry, I am having trouble connecting right now. Please try again.', 'bot');
+            });
+        }
+
+        function addMessage(text, sender) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
+            messageDiv.textContent = text;
+            chatbotMessages.appendChild(messageDiv);
+            scrollToBottom();
+        }
+
+        function scrollToBottom() {
+            chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
+        }
+
+        chatbotInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleChatSubmit();
+            }
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!chatbotWindow.contains(e.target) && !chatbotToggle.contains(e.target) && chatbotWindow.classList.contains('active')) {
+                chatbotWindow.classList.remove('active');
+            }
+        });
+
+        // Add some interactive effects
+        document.querySelectorAll('.yield-item').forEach(item => {
+            item.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-8px) scale(1.02)';
+            });
+            item.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(-5px) scale(1)';
+            });
+        });
+
+        // Add confetti effect on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const yieldValues = document.querySelectorAll('.yield-value');
+            yieldValues.forEach(value => {
+                value.style.opacity = '0';
+                value.style.transform = 'translateY(20px)';
+                
+                setTimeout(() => {
+                    value.style.transition = 'all 0.8s ease';
+                    value.style.opacity = '1';
+                    value.style.transform = 'translateY(0)';
+                }, 300);
+            });
+
+            // Initialize yield indicator
+            initializeYieldIndicator();
+
+            // Fetch AI suggestions
+            fetchAISuggestions();
+        });
+
+        // Hide loading overlay after page load
+        window.addEventListener('load', function() {
+            setTimeout(function() {
+                const overlay = document.getElementById('loadingOverlay');
+                if (overlay) {
+                    overlay.classList.remove('active');
+                }
+            }, 500);
+        });
+
+        // Yield Indicator Calculation and Display
+        function initializeYieldIndicator() {
+            const yieldPerHa = parseFloat('{{ yield_per_ha }}');
+            
+            // Calculate yield percentage (assuming max yield is ~5000 kg/ha for crops in TN)
+            const maxYield = 5000;
+            let percentage = (yieldPerHa / maxYield) * 100;
+            percentage = Math.min(percentage, 100); // Cap at 100%
+            percentage = Math.max(percentage, 0);   // Min 0%
+
+            // Determine status
+            let status = '';
+            let emoji = '';
+            let color = '';
+
+            if (percentage >= 80) {
+                status = '🌟 EXCELLENT - Outstanding yield performance! Your conditions are near-optimal.';
+                color = '#1B5E20';
+            } else if (percentage >= 60) {
+                status = '⬆️ HIGH - Very good yield potential! Minor adjustments could improve further.';
+                color = '#4CAF50';
+            } else if (percentage >= 40) {
+                status = '📈 GOOD - Solid yield potential. Consider optimizations in soil nutrients and water management.';
+                color = '#F9A825';
+            } else if (percentage >= 20) {
+                status = '📊 MEDIUM - Moderate yield potential. Focus on improving soil health and nutrient levels.';
+                color = '#F57C00';
+            } else {
+                status = '📉 LOW - Lower yield potential. Significant improvements recommended in multiple areas.';
+                color = '#D32F2F';
+            }
+
+            // Animate the bar fill
+            const yieldBar = document.getElementById('yieldBar');
+            const yieldPercentageText = document.getElementById('yieldPercentage');
+            const yieldStatus = document.getElementById('yieldStatus');
+
+            if (yieldBar && yieldPercentageText && yieldStatus) {
+                yieldBar.style.width = percentage + '%';
+                yieldPercentageText.textContent = Math.round(percentage) + '%';
+                yieldStatus.textContent = status;
+                yieldStatus.style.borderLeftColor = color;
+                yieldStatus.style.color = color;
+            }
+        }
+
+        // Fetch AI Suggestions
+        function fetchAISuggestions() {
+            const crop = '{{ crop }}';
+            const district = '{{ district }}';
+            const yieldPerHa = parseFloat('{{ yield_per_ha }}');
+            const rainfall = parseFloat('{{ rainfall }}');
+            const temperature = parseFloat('{{ temperature }}');
+            const soilPH = parseFloat('{{ soil_ph }}');
+            const nitrogen = parseFloat('{{ nitrogen }}');
+            const phosphorus = parseFloat('{{ phosphorus }}');
+            const potassium = parseFloat('{{ potassium }}');
+
+            // Prepare suggestion context
+            const context = `
+            Crop: ${crop}
+            District: ${district}
+            Current Yield: ${yieldPerHa} kg/ha
+            Rainfall: ${rainfall} mm
+            Temperature: ${temperature} °C
+            Soil pH: ${soilPH}
+            Nitrogen: ${nitrogen} kg/ha
+            Phosphorus: ${phosphorus} kg/ha
+            Potassium: ${potassium} kg/ha
+            `;
+
+            fetch('/get-crop-suggestions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    crop: crop,
+                    district: district,
+                    yield_per_ha: yieldPerHa,
+                    rainfall: rainfall,
+                    temperature: temperature,
+                    soil_ph: soilPH,
+                    nitrogen: nitrogen,
+                    phosphorus: phosphorus,
+                    potassium: potassium,
+                    context: context
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                displaySuggestions(data.suggestions);
+            })
+            .catch(error => {
+                console.error('Error fetching suggestions:', error);
+                displayErrorSuggestions();
+            });
+        }
+
+        // Display AI Suggestions
+        function displaySuggestions(suggestions) {
+            const container = document.getElementById('suggestionsContainer');
+            
+            if (!suggestions || suggestions.length === 0) {
+                container.innerHTML = '<div class="no-suggestions">Unable to generate suggestions. Please try again later.</div>';
+                return;
+            }
+
+            let html = '<div class="suggestions-grid">';
+
+            suggestions.forEach((suggestion, index) => {
+                const stars = '⭐'.repeat(Math.round(suggestion.rating || 4));
+                
+                html += `
+                <div class="suggestion-card">
+                    <div class="suggestion-header">
+                        <div class="suggestion-title">${suggestion.title}</div>
+                        <div class="suggestion-score">${suggestion.score}/10</div>
+                    </div>
+                    <div class="suggestion-rating">
+                        <span class="suggestion-stars">${stars}</span>
+                        <span class="suggestion-rating-text">${suggestion.rating || 4}/5</span>
+                    </div>
+                    <div class="suggestion-description">
+                        ${suggestion.description}
+                    </div>
+                    <div class="suggestion-implementation">
+                        <strong>Implementation:</strong><br>
+                        ${suggestion.implementation}
+                    </div>
+                </div>
+                `;
+            });
+
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        // Display error suggestions
+        function displayErrorSuggestions() {
+            const container = document.getElementById('suggestionsContainer');
+            container.innerHTML = `
+            <div class="suggestion-card">
+                <div class="suggestion-title">💡 General Improvement Tips</div>
+                <div class="suggestion-description">
+                    Here are some general tips to improve your crop yield:
+                </div>
+                <div class="suggestion-implementation">
+                    <strong>1. Soil Health:</strong> Conduct soil testing and adjust nutrients based on test results<br><br>
+                    <strong>2. Water Management:</strong> Implement drip irrigation for better water efficiency<br><br>
+                    <strong>3. Pest Control:</strong> Use integrated pest management practices<br><br>
+                    <strong>4. Timing:</strong> Ensure optimal planting and harvest timing for your region
+                </div>
+            </div>
+            `;
+        }
+
+        // Show loading overlay when form is submitted
+        function showLoadingOverlay() {
+            const overlay = document.getElementById('loadingOverlay');
+            if (overlay) {
+                overlay.classList.add('active');
+            }
+        }
+
+        // Make loading overlay visible on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Small delay to show loading was completed
+            setTimeout(function() {
+                const overlay = document.getElementById('loadingOverlay');
+                if (overlay && overlay.classList.contains('active')) {
+                    overlay.classList.remove('active');
+                }
+            }, 1500);
+        });
+    </script>
+</body>
+</html>

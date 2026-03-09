@@ -1,0 +1,22 @@
+flask==2.3.3
+gunicorn==21.2.0
+numpy==1.24.3
+pandas==2.0.3
+scikit-learn==1.3.0
+requests==2.31.0
+google-generativeai==0.3.0
+python-dotenv==1.0.0
+
+# Database adapters (uncomment based on your choice)
+# For PostgreSQL (Supabase, AWS RDS, etc.):
+# psycopg2-binary==2.9.9
+
+# For MySQL (if using cloud MySQL):
+# mysql-connector-python==8.1.0
+# PyMySQL==1.1.0
+
+# For MongoDB:
+# pymongo==4.5.0
+
+# WSGI and Vercel compatibility
+Werkzeug==2.3.7

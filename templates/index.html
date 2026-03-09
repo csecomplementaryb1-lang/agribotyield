@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agriculture Yield Prediction for Tamilnadu Farmers</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Additional styles for range information */
+        .range-info {
+            font-size: 0.85rem;
+            color: #666;
+            margin-top: 5px;
+            font-style: italic;
+            display: block;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-title">
+                <h1>Agriculture Yield Prediction</h1>
+                <p>Empowering Tamilnadu Farmers with AI-Powered Crop Insights</p>
+            </div>
+            <img src="{{ url_for('static', filename='banner-blog-agriculture.jpg') }}" alt="Agriculture Banner" class="header-banner">
+        </header>
+
+        <div class="main-content">
+            <form action="/predict" method="POST" class="prediction-form" id="predictionForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="district"><i class="fas fa-map-marker-alt"></i> District:</label>
+                        <select id="district" name="district" required>
+                            <option value="">Select District</option>
+                            {% for district in districts %}
+                            <option value="{{ district.id }}">{{ district.district_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="crop"><i class="fas fa-seedling"></i> Crop:</label>
+                        <select id="crop" name="crop" required>
+                            <option value="">Select Crop</option>
+                            {% for crop in crops %}
+                            <option value="{{ crop.id }}">{{ crop.crop_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="area"><i class="fas fa-ruler-combined"></i> Cultivation Area:</label>
+                    <div class="area-input-group">
+                        <input type="number" id="area" name="area" step="0.1" min="0.1" required 
+                               placeholder="Enter cultivation area">
+                        <select id="area_unit" name="area_unit" required>
+                            <option value="acres">Acres</option>
+                            <option value="hectares">Hectares</option>
+                        </select>
+                    </div>
+                    <span class="range-info">Typical range: 1-50 hectares/acres</span>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="rainfall"><i class="fas fa-cloud-rain"></i> Rainfall (mm):</label>
+                        <input type="number" id="rainfall" name="rainfall" step="0.1" min="0" max="2000" required 
+                               placeholder="Average rainfall in mm">
+                        <span class="range-info">Typical range: 500-1300 mm (Normal: 900±200)</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="temperature"><i class="fas fa-thermometer-half"></i> Temperature (°C):</label>
+                        <input type="number" id="temperature" name="temperature" step="0.1" min="-10" max="50" required
+                               placeholder="Average temperature">
+                        <span class="range-info">Typical range: 19-37°C (Normal: 28±3)</span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="soil_ph"><i class="fas fa-flask"></i> Soil pH Level (0-14):</label>
+                    <input type="number" id="soil_ph" name="soil_ph" step="0.1" min="0" max="14" required
+                           placeholder="Soil pH value">
+                    <span class="range-info">Typical range: 5.5-7.5 (Normal: 6.5±0.5)</span>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="nitrogen"><i class="fas fa-atom"></i> Nitrogen (kg/ha):</label>
+                        <input type="number" id="nitrogen" name="nitrogen" step="0.1" min="0" max="500" required
+                               placeholder="Nitrogen content">
+                        <span class="range-info">Typical range: 100-400 kg/ha (Normal: 250±50)</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="phosphorus"><i class="fas fa-fire"></i> Phosphorus (kg/ha):</label>
+                        <input type="number" id="phosphorus" name="phosphorus" step="0.1" min="0" max="150" required
+                               placeholder="Phosphorus content">
+                        <span class="range-info">Typical range: 20-80 kg/ha (Normal: 50±10)</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="potassium"><i class="fas fa-bolt"></i> Potassium (kg/ha):</label>
+                        <input type="number" id="potassium" name="potassium" step="0.1" min="0" max="400" required
+                               placeholder="Potassium content">
+                        <span class="range-info">Typical range: 100-300 kg/ha (Normal: 200±40)</span>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-predict">
+                    <i class="fas fa-mobile-alt"></i>
+                    Predict Crop Yield
+                    <i class="fas fa-arrow-right"></i>
+                </button>
+            </form>
+
+            <!-- Sample Data Section -->
+            <div class="sample-data">
+                <h3><i class="fas fa-lightbulb"></i> Quick Test Samples</h3>
+                <p>Try these sample configurations to test the prediction system:</p>
+                
+                <div class="sample-buttons">
+                    <button type="button" class="sample-btn sample-rice" onclick="fillSample(1)">
+                        <i class="fas fa-tint"></i>
+                        <div class="sample-text">Rice<br><span>Thanjavur</span></div>
+                    </button>
+                    <button type="button" class="sample-btn sample-sugarcane" onclick="fillSample(2)">
+                        <i class="fas fa-candy-cane"></i>
+                        <div class="sample-text">Sugar Cane<br><span>Coimbatore</span></div>
+                    </button>
+                    <button type="button" class="sample-btn sample-banana" onclick="fillSample(3)">
+                        <i class="fas fa-apple-alt"></i>
+                        <div class="sample-text">Banana<br><span>Tiruchirappalli</span></div>
+                    </button>
+                    <button type="button" class="sample-btn sample-groundnut" onclick="fillSample(4)">
+                        <i class="fas fa-seedling"></i>
+                        <div class="sample-text">Ground Nut<br><span>Vellore</span></div>
+                    </button>
+                    <button type="button" class="sample-btn sample-cotton" onclick="fillSample(5)">
+                        <i class="fas fa-shirt"></i>
+                        <div class="sample-text">Cotton<br><span>Salem</span></div>
+                    </button>
+                    <button type="button" class="sample-btn sample-sunflower" onclick="fillSample(6)">
+                        <i class="fas fa-sun"></i>
+                        <div class="sample-text">Sunflower<br><span>Madurai</span></div>
+                    </button>
+                </div>
+
+                <div id="sampleInfo1" class="sample-info">
+                    <strong><i class="fas fa-tint"></i> Rice in Thanjavur (High Yield Conditions)</strong><br>
+                    Area: 2.0 hectares | Rainfall: 950mm | Temp: 28.5°C | Soil pH: 6.8<br>
+                    N: 280 kg/ha | P: 60 kg/ha | K: 220 kg/ha<br>
+                    Expected: ~3,000 kg/ha
+                </div>
+                
+                <div id="sampleInfo2" class="sample-info">
+                    <strong><i class="fas fa-candy-cane"></i> Sugar Cane in Coimbatore</strong><br>
+                    Area: 5.0 acres | Rainfall: 700mm | Temp: 30.0°C | Soil pH: 7.2<br>
+                    N: 350 kg/ha | P: 80 kg/ha | K: 280 kg/ha<br>
+                    Expected: ~80 tonnes/acre
+                </div>
+                
+                <div id="sampleInfo3" class="sample-info">
+                    <strong><i class="fas fa-apple-alt"></i> Banana in Tiruchirappalli</strong><br>
+                    Area: 3.0 hectares | Rainfall: 900mm | Temp: 29.0°C | Soil pH: 7.5<br>
+                    N: 400 kg/ha | P: 100 kg/ha | K: 350 kg/ha<br>
+                    Expected: ~45 tonnes/ha
+                </div>
+                
+                <div id="sampleInfo4" class="sample-info">
+                    <strong><i class="fas fa-seedling"></i> Ground Nut in Vellore</strong><br>
+                    Area: 4.0 acres | Rainfall: 800mm | Temp: 29.5°C | Soil pH: 6.5<br>
+                    N: 180 kg/ha | P: 45 kg/ha | K: 160 kg/ha<br>
+                    Expected: ~1,600 kg/ha
+                </div>
+                
+                <div id="sampleInfo5" class="sample-info">
+                    <strong><i class="fas fa-shirt"></i> Cotton in Salem</strong><br>
+                    Area: 8.0 acres | Rainfall: 750mm | Temp: 30.5°C | Soil pH: 7.0<br>
+                    N: 220 kg/ha | P: 50 kg/ha | K: 190 kg/ha<br>
+                    Expected: ~500 kg/ha
+                </div>
+                
+                <div id="sampleInfo6" class="sample-info">
+                    <strong><i class="fas fa-sun"></i> Sun Flower in Madurai</strong><br>
+                    Area: 6.0 hectares | Rainfall: 650mm | Temp: 31.0°C | Soil pH: 6.8<br>
+                    N: 150 kg/ha | P: 40 kg/ha | K: 140 kg/ha<br>
+                    Expected: ~850 kg/ha
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p><strong>GAYATHRI S - M.E(CSE-Specialization in Networks)</strong></p>
+        </div>
+    </div>
+
+    <!-- AI Chat Bot -->
+    <div class="chatbot-container">
+        <button class="chatbot-button" id="chatbotToggle">
+            <img src="{{ url_for('static', filename='agribotnew.png') }}" alt="Agri Bot" class="chatbot-avatar">
+        </button>
+        
+        <div class="chatbot-window" id="chatbotWindow">
+            <div class="chatbot-header">
+                <h3>🌾 Agri Assistant</h3>
+                <button class="chatbot-close" id="chatbotClose">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="chatbot-messages" id="chatbotMessages">
+                <div class="message bot">
+                    <strong>Vanakkam! 👋</strong><br><br>
+                    I'm your agricultural assistant for Tamilnadu. I can help you with:
+                    <br>• 🌱 Crop selection & recommendations
+                    <br>• 💧 Irrigation & water management
+                    <br>• 🌾 Soil health & fertilization
+                    <br>• 🐛 Pest & disease control
+                    <br>• 📈 Yield optimization
+                    <br><br>
+                    How can I assist you today?
+                </div>
+            </div>
+            
+            <div class="suggested-questions">
+                <button class="suggested-question" onclick="askQuestion('Best crops for low rainfall areas in Tamilnadu?')">
+                    🌵 Best crops for low rainfall areas?
+                </button>
+                <button class="suggested-question" onclick="askQuestion('How to improve soil fertility for rice cultivation in Tamilnadu?')">
+                    🌱 Improve soil for rice cultivation?
+                </button>
+                <button class="suggested-question" onclick="askQuestion('What are the government schemes for farmers in Tamilnadu?')">
+                    🏛️ Government schemes for farmers?
+                </button>
+            </div>
+            
+            <div class="chatbot-input">
+                <form class="chatbot-input-form" id="chatbotForm">
+                    <input type="text" id="chatbotInput" placeholder="Ask about Tamilnadu agriculture..." required>
+                    <button type="submit" class="chatbot-send">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </form>
+            </div>
+            
+            <div class="typing-indicator" id="typingIndicator">
+                <i class="fas fa-ellipsis-h"></i> Agri Assistant is typing...
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DEBUG: Log available districts and crops
+        console.log("Available districts:", document.getElementById('district').innerHTML);
+        console.log("Available crops:", document.getElementById('crop').innerHTML);
+
+        // Sample data configurations - FIXED VERSION
+        const samples = {
+            1: { // Rice - Thanjavur
+                district: "Thanjavur",
+                crop: "Rice",
+                area: "2.0",
+                area_unit: "hectares",
+                rainfall: "950",
+                temperature: "28.5",
+                soil_ph: "6.8",
+                nitrogen: "280",
+                phosphorus: "60",
+                potassium: "220"
+            },
+            2: { // Sugar Cane - Coimbatore
+                district: "Coimbatore", 
+                crop: "Sugar Cane",
+                area: "5.0",
+                area_unit: "acres",
+                rainfall: "700",
+                temperature: "30.0",
+                soil_ph: "7.2",
+                nitrogen: "350",
+                phosphorus: "80",
+                potassium: "280"
+            },
+            3: { // Banana - Tiruchirappalli
+                district: "Tiruchirappalli",
+                crop: "Banana",
+                area: "3.0",
+                area_unit: "hectares",
+                rainfall: "900",
+                temperature: "29.0",
+                soil_ph: "7.5",
+                nitrogen: "400",
+                phosphorus: "100",
+                potassium: "350"
+            },
+            4: { // Ground Nut - Vellore
+                district: "Vellore",
+                crop: "Ground Nut",
+                area: "4.0",
+                area_unit: "acres", 
+                rainfall: "800",
+                temperature: "29.5",
+                soil_ph: "6.5",
+                nitrogen: "180",
+                phosphorus: "45",
+                potassium: "160"
+            },
+            5: { // Cotton - Salem
+                district: "Salem",
+                crop: "Cotton",
+                area: "8.0",
+                area_unit: "acres",
+                rainfall: "750",
+                temperature: "30.5", 
+                soil_ph: "7.0",
+                nitrogen: "220",
+                phosphorus: "50",
+                potassium: "190"
+            },
+            6: { // Sun Flower - Madurai
+                district: "Madurai",
+                crop: "Sun Flower",
+                area: "6.0",
+                area_unit: "hectares",
+                rainfall: "650",
+                temperature: "31.0",
+                soil_ph: "6.8",
+                nitrogen: "150",
+                phosphorus: "40",
+                potassium: "140"
+            }
+        };
+
+        function fillSample(sampleId) {
+            console.log("Filling sample:", sampleId, samples[sampleId]);
+            
+            const sample = samples[sampleId];
+            if (!sample) {
+                console.error("Sample not found:", sampleId);
+                return;
+            }
+            
+            // Hide all sample info
+            document.querySelectorAll('.sample-info').forEach(info => {
+                info.classList.remove('active');
+            });
+            
+            // Show selected sample info
+            const sampleInfo = document.getElementById(`sampleInfo${sampleId}`);
+            if (sampleInfo) {
+                sampleInfo.classList.add('active');
+            }
+            
+            // Fill form fields with error handling
+            try {
+                // Fill district
+                const districtId = getDistrictId(sample.district);
+                console.log("District:", sample.district, "ID:", districtId);
+                if (districtId) {
+                    document.getElementById('district').value = districtId;
+                }
+                
+                // Fill crop
+                const cropId = getCropId(sample.crop);
+                console.log("Crop:", sample.crop, "ID:", cropId);
+                if (cropId) {
+                    document.getElementById('crop').value = cropId;
+                }
+                
+                // Fill other fields
+                document.getElementById('area').value = sample.area;
+                document.getElementById('area_unit').value = sample.area_unit;
+                document.getElementById('rainfall').value = sample.rainfall;
+                document.getElementById('temperature').value = sample.temperature;
+                document.getElementById('soil_ph').value = sample.soil_ph;
+                document.getElementById('nitrogen').value = sample.nitrogen;
+                document.getElementById('phosphorus').value = sample.phosphorus;
+                document.getElementById('potassium').value = sample.potassium;
+                
+                console.log("Form filled successfully!");
+                
+            } catch (error) {
+                console.error("Error filling form:", error);
+                alert("Error loading sample data. Please check console for details.");
+            }
+            
+            // Scroll to form
+            document.getElementById('predictionForm').scrollIntoView({ 
+                behavior: 'smooth',
+                block: 'start'
+            });
+        }
+
+        function getDistrictId(districtName) {
+            const districtSelect = document.getElementById('district');
+            for (let i = 0; i < districtSelect.options.length; i++) {
+                if (districtSelect.options[i].text === districtName) {
+                    return districtSelect.options[i].value;
+                }
+            }
+            console.warn("District not found:", districtName);
+            return '';
+        }
+
+        function getCropId(cropName) {
+            const cropSelect = document.getElementById('crop');
+            for (let i = 0; i < cropSelect.options.length; i++) {
+                if (cropSelect.options[i].text === cropName) {
+                    return cropSelect.options[i].value;
+                }
+            }
+            console.warn("Crop not found:", cropName);
+            return '';
+        }
+
+        // Form validation
+        document.getElementById('predictionForm').addEventListener('submit', function(e) {
+            // Show loading overlay
+            const totalHeight = document.documentElement.scrollHeight;
+            const loadingOverlay = document.createElement('div');
+            loadingOverlay.className = 'loading-overlay active';
+            loadingOverlay.id = 'formLoadingOverlay';
+            loadingOverlay.innerHTML = `
+                <div class="loading-spinner">
+                    <div class="progress-container">
+                        <div class="progress-bar">
+                            <div class="progress-fill"></div>
+                            <div class="progress-percentage">0%</div>
+                        </div>
+                    </div>
+                    <div class="loading-text">Processing your prediction<span class="loading-dots"></span></div>
+                </div>
+            `;
+            document.body.appendChild(loadingOverlay);
+            
+            // Simulate progress bar - complete in 4 seconds
+            const progressFill = loadingOverlay.querySelector('.progress-fill');
+            const percentageText = loadingOverlay.querySelector('.progress-percentage');
+            let progress = 0;
+            const startTime = Date.now();
+            const duration = 4000; // 4 seconds
+            
+            const progressInterval = setInterval(() => {
+                const elapsed = Date.now() - startTime;
+                progress = Math.min((elapsed / duration) * 100, 100);
+                progressFill.style.width = progress + '%';
+                percentageText.textContent = Math.floor(progress) + '%';
+                
+                if (progress >= 100) {
+                    clearInterval(progressInterval);
+                }
+            }, 50);
+            
+            // Complete progress on response
+            const completeProgress = () => {
+                clearInterval(progressInterval);
+                progressFill.style.width = '100%';
+                percentageText.textContent = '100%';
+            };
+            
+            const soilPh = parseFloat(document.getElementById('soil_ph').value);
+            if (soilPh < 0 || soilPh > 14) {
+                alert('Soil pH must be between 0 and 14');
+                clearInterval(progressInterval);
+                loadingOverlay.remove();
+                e.preventDefault();
+                return;
+            }
+            
+            const area = parseFloat(document.getElementById('area').value);
+            if (area <= 0) {
+                alert('Area must be greater than 0');
+                clearInterval(progressInterval);
+                loadingOverlay.remove();
+                e.preventDefault();
+                return;
+            }
+
+            const rainfall = parseFloat(document.getElementById('rainfall').value);
+            if (rainfall < 0 || rainfall > 2000) {
+                alert('Rainfall must be between 0 and 2000 mm');
+                clearInterval(progressInterval);
+                loadingOverlay.remove();
+                e.preventDefault();
+                return;
+            }
+
+            const temperature = parseFloat(document.getElementById('temperature').value);
+            if (temperature < -10 || temperature > 50) {
+                alert('Temperature must be between -10°C and 50°C');
+                clearInterval(progressInterval);
+                loadingOverlay.remove();
+                e.preventDefault();
+                return;
+            }
+
+            const nitrogen = parseFloat(document.getElementById('nitrogen').value);
+            if (nitrogen < 0 || nitrogen > 500) {
+                alert('Nitrogen must be between 0 and 500 kg/ha');
+                clearInterval(progressInterval);
+                loadingOverlay.remove();
+                e.preventDefault();
+                return;
+            }
+
+            const phosphorus = parseFloat(document.getElementById('phosphorus').value);
+            if (phosphorus < 0 || phosphorus > 150) {
+                alert('Phosphorus must be between 0 and 150 kg/ha');
+                clearInterval(progressInterval);
+                loadingOverlay.remove();
+                e.preventDefault();
+                return;
+            }
+
+            const potassium = parseFloat(document.getElementById('potassium').value);
+            if (potassium < 0 || potassium > 400) {
+                alert('Potassium must be between 0 and 400 kg/ha');
+                clearInterval(progressInterval);
+                loadingOverlay.remove();
+                e.preventDefault();
+                return;
+            }
+        });
+
+        // Auto-hide sample info after 10 seconds
+        setInterval(() => {
+            document.querySelectorAll('.sample-info.active').forEach(info => {
+                info.classList.remove('active');
+            });
+        }, 10000);
+
+        // AI Chat Bot Functionality - FIXED VERSION
+        const chatbotToggle = document.getElementById('chatbotToggle');
+        const chatbotWindow = document.getElementById('chatbotWindow');
+        const chatbotClose = document.getElementById('chatbotClose');
+        const chatbotForm = document.getElementById('chatbotForm');
+        const chatbotInput = document.getElementById('chatbotInput');
+        const chatbotMessages = document.getElementById('chatbotMessages');
+        const typingIndicator = document.getElementById('typingIndicator');
+
+        // Toggle chat window
+        chatbotToggle.addEventListener('click', () => {
+            chatbotWindow.classList.toggle('active');
+            if (chatbotWindow.classList.contains('active')) {
+                chatbotInput.focus();
+            }
+        });
+
+        // Close chat window
+        chatbotClose.addEventListener('click', () => {
+            chatbotWindow.classList.remove('active');
+        });
+
+        // Ask question from suggested buttons
+        window.askQuestion = function(question) {
+            console.log("Asking question:", question);
+            chatbotInput.value = question;
+            handleChatSubmit();
+        }
+
+        // Handle form submission
+        chatbotForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            handleChatSubmit();
+        });
+
+        function handleChatSubmit() {
+            const message = chatbotInput.value.trim();
+            if (!message) return;
+            
+            console.log("Sending message to AI:", message);
+            
+            // Add user message
+            addMessage(message, 'user');
+            chatbotInput.value = '';
+            
+            // Show typing indicator
+            typingIndicator.style.display = 'flex';
+            scrollToBottom();
+            
+            // Send to backend with timeout
+            fetch('/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ message: message })
+            })
+            .then(response => {
+                console.log("Response status:", response.status);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log("AI Response received:", data);
+                typingIndicator.style.display = 'none';
+                if (data.response) {
+                    addMessage(data.response, 'bot');
+                } else {
+                    addMessage("I apologize, but I didn't receive a proper response. Please try again.", 'bot');
+                }
+            })
+            .catch(error => {
+                console.error('Chat error:', error);
+                typingIndicator.style.display = 'none';
+                addMessage('Sorry, I am having trouble connecting right now. Please check your internet connection and try again.', 'bot');
+            });
+        }
+
+        function addMessage(text, sender) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
+            messageDiv.textContent = text;
+            chatbotMessages.appendChild(messageDiv);
+            scrollToBottom();
+        }
+
+        function scrollToBottom() {
+            chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
+        }
+
+        // Allow Enter key to send message
+        chatbotInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleChatSubmit();
+            }
+        });
+
+        // Close chat when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!chatbotWindow.contains(e.target) && !chatbotToggle.contains(e.target) && chatbotWindow.classList.contains('active')) {
+                chatbotWindow.classList.remove('active');
+            }
+        });
+
+        // Test chat connection on load
+        console.log("AI Chat system initialized");
+    </script>
+</body>
+</html>
